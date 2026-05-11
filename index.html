@@ -451,7 +451,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <script>
 const SUPABASE_URL = "https://rmzvsxwdtqcwwhnpukwj.supabase.co";
-const SUPABASE_KEY = "sb_publishable_LJJlqIRjzSyk8ivFjqpXvQ_Ghh24Kwg";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtenZzeHdkdHFjd3dobnB1a3dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MzQ1NDMsImV4cCI6MjA5NDAxMDU0M30.FjKxtPTW6-6Oq_rjWOItjKKoUyRM5APQts8O1iGm62w";
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const App = {
@@ -521,7 +521,7 @@ async function fetchLeads(){
   App.loading=true;
   renderLeadsLoading();
   const{chip,sort,page,perPage,search,filters}=App;
-  let q=_sb.from("leads").select(`*,pipeline_stages(id,label,emoji,color,sla_days,position),profiles(id,full_name),activities(id,type,created_at,body,meta)`,{count:"exact"}).eq("org_id",App.profile.org_id).is("deleted_at",null);
+  let q=_sb.from("leads").select(`*,pipeline_stages(id,label,emoji,color,sla_days,position),profiles(id,full_name),activities(id,type,created_at,body)`,{count:"exact"}).eq("org_id",App.profile.org_id).is("deleted_at",null);
   if(chip&&chip!=="all"){if(chip==="hot")q=q.eq("temperatura","quente");else if(chip==="today")q=q.eq("proxima_data",today());else if(chip!=="sla"){const stage=App.stages.find(s=>s.id===chip);if(stage)q=q.eq("stage_id",stage.id);}}
   if(filters.temperatura)q=q.eq("temperatura",filters.temperatura);
   if(filters.no_action)q=q.is("proxima_acao",null);
@@ -712,7 +712,7 @@ async function deleteLeadFromEdit(){
 async function moveLead(id,stage_id,evt){
   if(evt)evt.stopPropagation();
   if(!stage_id)return;
-  const{error}=await _sb.from("leads").update({stage_id,last_contact_at:new Date().toISOString()}).eq("id",id);
+  const{error}=await _sb.from("leads").update({stage_id,last_contact_at:new Date().toISOString(),stage_entered_at:new Date().toISOString()}).eq("id",id);
   if(error){showToast("❌ Erro ao mover","red");return;}
   const s=App.stages.find(x=>x.id===stage_id);
   showToast(`✅ Movido para ${s?.label}`,"gold");
