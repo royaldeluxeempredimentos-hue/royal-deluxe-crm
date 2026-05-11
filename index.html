@@ -487,16 +487,23 @@ function toggleUserMenu(){document.getElementById("user-menu").classList.toggle(
 document.addEventListener("click",e=>{if(!e.target.closest("#user-av"))document.getElementById("user-menu").classList.remove("open");});
 
 async function initAuth(){
-  const{data:{session}}=await _sb.auth.getSession();
-  if(!session){const ls=document.getElementById("loading-screen");if(ls){ls.style.display="none";}showLoginScreen();return false;}
-  const{data:profile,error}=await _sb.from("profiles").select("*").eq("id",session.user.id).single();
-  if(error||!profile){showToast("Perfil não encontrado","red");return false;}
-  App.profile=profile;
-  const av=document.getElementById("user-av");
-  av.textContent=initials(profile.full_name);
-  document.getElementById("user-info-lbl").textContent=profile.full_name;
-  document.getElementById("user-menu-name").textContent=profile.full_name+" · "+profile.role;
-  return true;
+  try{
+    const tout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),8000));
+    const{data:{session}}=await Promise.race([_sb.auth.getSession(),tout]);
+    if(!session){document.getElementById("loading-screen").classList.add("hidden");showLoginScreen();return false;}
+    const{data:profile,error}=await _sb.from("profiles").select("*").eq("id",session.user.id).single();
+    if(error||!profile){document.getElementById("loading-screen").classList.add("hidden");showLoginScreen();return false;}
+    App.profile=profile;
+    const av=document.getElementById("user-av");
+    av.textContent=initials(profile.full_name);
+    document.getElementById("user-info-lbl").textContent=profile.full_name;
+    document.getElementById("user-menu-name").textContent=profile.full_name+" · "+profile.role;
+    return true;
+  }catch(e){
+    document.getElementById("loading-screen").classList.add("hidden");
+    showLoginScreen();
+    return false;
+  }
 }
 
 async function doLogout(){await _sb.auth.signOut();showLoginScreen();}
@@ -929,7 +936,7 @@ async function exportJSON(){
   showToast("✅ JSON exportado!","green");
 }
 
-(async function init(){
+(async function init(){try{
   const ok=await initAuth();
   if(!ok)return;
   await loadStages();
@@ -939,6 +946,7 @@ async function exportJSON(){
   document.getElementById("loading-screen").classList.add("hidden");
   document.getElementById("app").classList.add("ready");
   await _sb.from("pipeline_snapshots").upsert({org_id:App.profile.org_id,snapshot_date:today(),total_leads:App.leadsTotal,total_valor:App.summary?.total_valor||0,valor_fechado:App.summary?.closed_valor||0,por_stage:{}},{onConflict:"org_id,snapshot_date"}).catch(()=>{});
+}catch(e){document.getElementById("loading-screen").classList.add("hidden");showLoginScreen();}
 })();
 </script>
 
